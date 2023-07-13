@@ -1,2 +1,2 @@
-# rss007d0675444aa13fc
-RSS Newsfeed scraper - attempt to find newly posted articles on a curated list of RSS feeds
+# RSS Newsfeed scraper
+Scrapes public newsfeeds via RSS, on a curated list of newsfeeds (upgradable): https://raw.githubusercontent.com/exorde-labs/TestnetProtocol/main/targets/FeedSources.json
