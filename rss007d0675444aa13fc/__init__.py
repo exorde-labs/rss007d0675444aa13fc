@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import AsyncGenerator
 import logging
 import aiohttp
+from . import ArticleClass
 from ArticleClass import Article
 from ExtractContent import request_random_content
 from exorde_data import (
