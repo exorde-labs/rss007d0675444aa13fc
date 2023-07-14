@@ -5,6 +5,8 @@ import aiohttp
 import json
 import random
 import feedparser
+import tldextract
+import re
 import pytz
 from datetime import datetime
 from dateutil import parser
@@ -323,6 +325,15 @@ async def get_json_dict():
 
     return data
 
+def extract_domain_name(url):
+    try:
+        domain_parts = tldextract.extract(url)
+        domain = domain_parts.domain + '.' + domain_parts.suffix
+        domain = re.sub(r"[^a-zA-Z0-9.-]", "", domain)
+        return domain
+    except Exception:
+        pass
+
 def convert_to_iso8601_utc(datetime_str: str) -> str:
     # Convert the input string to a datetime object
     dt = datetime.strptime(datetime_str, "%Y-%m-%d %H:%M:%S")
@@ -403,6 +414,7 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
         try:
             logging.info(f"[RSS newsfeed] FOUND ARTICLE: ")    
             logging.info(f"[RSS newsfeed]\tSource = {article.rss_source}")
+            source_domain = extract_domain_name(article.rss_source)
             logging.info(f"[RSS newsfeed]\tURL = {article.url}")
             created_at_formatted = convert_to_iso8601_utc(article.publish_date)
             logging.info(f"[RSS newsfeed]\tDate = {created_at_formatted}")
@@ -410,7 +422,7 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
             logging.info(f"[RSS newsfeed]\tArticle content = {str(article.content)}")        
             new_item = Item(
                 content=Content(str(article.content)),
-                author=Author(article.rss_source),
+                author=Author(str(source_domain)),
                 created_at=CreatedAt(created_at_formatted),
                 title=Title(article.title),
                 domain=Domain("news.exorde"),
