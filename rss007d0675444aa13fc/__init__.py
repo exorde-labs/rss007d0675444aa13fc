@@ -422,7 +422,7 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
             logging.info(f"[RSS newsfeed]\tArticle content = {str(article.content)}")        
             new_item = Item(
                 content=Content(str(article.content)),
-                author=Author(str(source_domain)),
+                # author=Author(str(source_domain)),
                 created_at=CreatedAt(created_at_formatted),
                 title=Title(article.title),
                 domain=Domain("news.exorde"),
