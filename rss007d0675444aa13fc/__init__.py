@@ -377,6 +377,7 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
     number_of_articles = maximum_items_to_collect
     max_number_of_tries = max_extraction_trials
     max_age_of_article_in_seconds = max_oldness_seconds
+    logging.info(f"[RSS newsfeed] Trying to find {number_of_articles} article(s) under {max_age_of_article_in_seconds} in {max_number_of_tries} max trials...")    
     try:
         data = await get_json_dict()
     except Exception as e:
