@@ -413,7 +413,7 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
     for article in articles:
         try:
             logging.info(f"[RSS newsfeed] FOUND ARTICLE: ")    
-            source_domain = extract_domain_name(article.rss_source)
+            source_domain = extract_domain_name(article.url)
             logging.info(f"[RSS newsfeed]\tSource = {source_domain}")
             logging.info(f"[RSS newsfeed]\tURL = {article.url}")
             created_at_formatted = convert_to_iso8601_utc(article.publish_date)
