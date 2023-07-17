@@ -329,7 +329,7 @@ def extract_domain_name(url):
     try:
         domain_parts = tldextract.extract(url)
         domain = domain_parts.domain + '.' + domain_parts.suffix
-        domain = re.sub(r"[^a-zA-Z0-9.-]", "", domain)
+        # domain = re.sub(r"[^a-zA-Z0-9.-]", "", domain)
         return domain
     except Exception:
         pass
@@ -413,8 +413,8 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
     for article in articles:
         try:
             logging.info(f"[RSS newsfeed] FOUND ARTICLE: ")    
-            logging.info(f"[RSS newsfeed]\tSource = {article.rss_source}")
             source_domain = extract_domain_name(article.rss_source)
+            logging.info(f"[RSS newsfeed]\tSource = {source_domain}")
             logging.info(f"[RSS newsfeed]\tURL = {article.url}")
             created_at_formatted = convert_to_iso8601_utc(article.publish_date)
             logging.info(f"[RSS newsfeed]\tDate = {created_at_formatted}")
@@ -425,7 +425,7 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
                 # author=Author(str(source_domain)),
                 created_at=CreatedAt(created_at_formatted),
                 title=Title(article.title),
-                domain=Domain("news.exorde"),
+                domain=Domain(str(source_domain)),
                 url=Url(article.url)
             )
             yield new_item
