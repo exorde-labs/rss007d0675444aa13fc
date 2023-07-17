@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="rss007d0675444aa13fc",
-    version="0.1.70",
+    version="0.1.80",
     packages=find_packages(),
     install_requires=[
         "exorde_data",
