@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import AsyncGenerator
 import logging
 import aiohttp
@@ -8,7 +8,6 @@ import feedparser
 import tldextract
 import re
 import pytz
-from datetime import datetime
 from dateutil import parser
 from io import BytesIO
 from newspaper import Article as Newspaper
@@ -380,6 +379,28 @@ def read_parameters(parameters):
 
     return max_oldness_seconds, maximum_items_to_collect, min_post_length, max_extraction_trials
 
+### TEMPORARY SOLUTION
+# TO SOME RSS FEEDS BEING IN THE FUTURE (MANY DAYS AHEAD)
+# Lacking any other solution, we can cap the date to now if it's ahead
+def cap_date_to_now(datetime_str):
+    # Convert the input string to a timezone-aware datetime object with UTC timezone
+    dt = datetime.strptime(datetime_str, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
+
+    # Get the current datetime in UTC
+    now = datetime.now(timezone.utc)
+
+    # Calculate the time difference between the provided datetime and the current datetime
+    time_difference = dt - now
+
+    # Check if the provided datetime is more than 12 hours in the future
+    if time_difference > timedelta(hours=12):
+        # If it's more than 12 hours in the future, set it to the current datetime
+        dt = now
+
+    # Convert the datetime back to the original format and return it as a string
+    capped_datetime_str = dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    return capped_datetime_str
+
 
 async def query(parameters: dict) -> AsyncGenerator[Item, None]:
     # read parameters dict
@@ -417,13 +438,14 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
             logging.info(f"[RSS newsfeed]\tSource = {source_domain}")
             logging.info(f"[RSS newsfeed]\tURL = {article.url}")
             created_at_formatted = convert_to_iso8601_utc(article.publish_date)
+            created_at_formatted_capped = cap_date_to_now(created_at_formatted)
             logging.info(f"[RSS newsfeed]\tDate = {created_at_formatted}")
             logging.info(f"[RSS newsfeed]\tTitle = {article.title}")
             logging.info(f"[RSS newsfeed]\tArticle content = {str(article.content)}")        
             new_item = Item(
                 content=Content(str(article.content)[:800]),
                 # author=Author(str(source_domain)),
-                created_at=CreatedAt(created_at_formatted),
+                created_at=CreatedAt(created_at_formatted_capped),
                 title=Title(article.title),
                 domain=Domain(str(source_domain)),
                 url=Url(article.url)
