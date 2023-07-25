@@ -21,7 +21,18 @@ from exorde_data import (
     Domain
 )
 
-################################################################################################################
+USER_AGENT_LIST = [
+    'Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15'
+]
+################################################################################################################.
+
 """
 The Article Class is used to fully describe an article so it can be passed as a standalone element. This is used
 when extracting content from an article for example. Essentially, it combines the RSS ID class and the Link class together.
@@ -318,8 +329,12 @@ def is_within_max_age(_now_time, _date, _max_age):
 
 async def get_json_dict():
     url = "https://raw.githubusercontent.com/exorde-labs/TestnetProtocol/main/targets/FeedSources.json"
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
+    
+    timeout=aiohttp.ClientTimeout(total=25)
+    headers={'User-Agent': random.choice(USER_AGENT_LIST)}
+    
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        async with session.get(url, headers=headers) as response:
             data = await response.json(content_type=None)
 
     return data
@@ -443,7 +458,7 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
             logging.info(f"[RSS newsfeed]\tTitle = {article.title}")
             logging.info(f"[RSS newsfeed]\tArticle content = {str(article.content)}")        
             new_item = Item(
-                content=Content(str(article.content)[:800]),
+                content=Content(str(article.content)),
                 # author=Author(str(source_domain)),
                 created_at=CreatedAt(created_at_formatted_capped),
                 title=Title(article.title),
