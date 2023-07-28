@@ -145,7 +145,7 @@ def parse_reference_json_data(_json_file_data):
     return all_feeds
 
 
-def extract_latest_items(_rss,
+async def extract_latest_items(_rss,
                          _start_date=convert_to_standard_timezone("Wednesday, 01 Jan 1000 00:00:01 +0000"),
                          _end_date=convert_to_standard_timezone("Friday, 01 Jan 2100 00:00:01 +0000")):
     """
@@ -154,15 +154,24 @@ def extract_latest_items(_rss,
     :param _start_date: the start date from which we will collect data, if un-specified, all data will be collected
     :param _end_date: the end date to which we will collect data, if un-specified all data will be collected
     :return: returns a list of elements that each have a title, a link and a publish date
-    """
+        """
+    logging.info(f"[RSS] Reading {_rss.rss_id.rss_url}")
+    timeout=aiohttp.ClientTimeout(total=10)
+    headers={'User-Agent': random.choice(USER_AGENT_LIST)}
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        async with session.get(_rss.rss_id.rss_url, headers=headers) as response:
+            data = await response.read()
+
+    # Put it to memory stream object universal feedparser
+    content = BytesIO(data)
 
     # Parse the XML feed
     try:
-        feed = feedparser.parse(_rss.rss_id.rss_url)
+        feed = feedparser.parse(content)
     except Exception as e:
         print("Error: " + str(e))
         return
-
+    
     # Extract data from each item
     for item in feed.entries:
 
@@ -238,7 +247,7 @@ def extract_content(_dict):  # using Newspaper3k
     return content
 
 
-def request_random_content(_n_articles, _max_age, _json_data, _max_number_of_tries):
+async def request_random_content(_n_articles, _max_age, _json_data, _max_number_of_tries):
     """
     Requests random articles from the database that fit the entry params.
     :param _n_articles: The random number of articles we wish to extract from the RSS feeds.
@@ -247,7 +256,7 @@ def request_random_content(_n_articles, _max_age, _json_data, _max_number_of_tri
     """
 
     rss_ids = parse_reference_json_data(_json_data)
-    articles = find_random_articles_with_max_age(_n_articles, rss_ids, _max_age, _max_number_of_tries)
+    articles = await find_random_articles_with_max_age(_n_articles, rss_ids, _max_age, _max_number_of_tries)
 
     dict = []
 
@@ -265,7 +274,7 @@ def request_random_content(_n_articles, _max_age, _json_data, _max_number_of_tri
     return articles
 
 
-def find_random_articles_with_max_age(_n_articles, _rss_id_list, _max_age, _max_number_of_tries):
+async def find_random_articles_with_max_age(_n_articles, _rss_id_list, _max_age, _max_number_of_tries):
     """
     Finds a random number of article urls within the reference JSON feed.
     :param _max_age:
@@ -289,7 +298,7 @@ def find_random_articles_with_max_age(_n_articles, _rss_id_list, _max_age, _max_
         rss_id = random.choice(_rss_id_list)
 
         rss = RSS(rss_id)
-        extract_latest_items(rss)
+        await extract_latest_items(rss)
 
         for link in rss.link_array:
             current_try_count += 1
@@ -441,9 +450,9 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
         self.content // the content of the article that was collected
     """
     try:
-        articles = request_random_content(number_of_articles, max_age_of_article_in_seconds, data, max_number_of_tries)
+        articles = await request_random_content(number_of_articles, max_age_of_article_in_seconds, data, max_number_of_tries)
     except Exception as e:
-        logging.info(f"[RSS newsfeed] Error when requesting content: {e}")
+        logging.exception(f"[RSS newsfeed] Error when requesting content: {e}")
         articles = []
 
     for article in articles:
