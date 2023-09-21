@@ -464,17 +464,15 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
             created_at_formatted = convert_to_iso8601_utc(article.publish_date)
             created_at_formatted_capped = cap_date_to_now(created_at_formatted)
             logging.info(f"[RSS newsfeed]\tDate = {created_at_formatted}")
-            logging.info(f"[RSS newsfeed]\tTitle = {article.title}")
-            logging.info(f"[RSS newsfeed]\tArticle content = {str(article.content)}")        
+            logging.info(f"[RSS newsfeed]\tTitle = {article.title}")    
 
             # CONTENT SANITIZATION
-            processed_content = str(article.content).replace("\\n", " .").replace("\\r", " .").replace("\t", " ")
-            processed_content = processed_content.replace("\n", " .").replace("\r", " .").replace("\t", " ")
             # replace also quotes and double quotes
-            processed_content = processed_content.replace("\"", " ").replace("\'", " ")
-            # remove \ and /
-            processed_content = processed_content.replace("\\n", " ").replace("\\r", " ")
+            processed_content = str(article.content).replace("\"", " ").replace("\'", " ")
             processed_content = processed_content.replace("\\", " ").replace("/", " ")
+            # remove ALL occurences of \n or \r
+            processed_content = processed_content.replace("\n", " ").replace("\r", " ")
+            logging.info(f"[RSS newsfeed]\tArticle content = {str(processed_content)}")    
 
             new_item = Item(
                 content=Content(str(processed_content)),
