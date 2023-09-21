@@ -467,9 +467,15 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
             logging.info(f"[RSS newsfeed]\tTitle = {article.title}")
             logging.info(f"[RSS newsfeed]\tArticle content = {str(article.content)}")        
 
-            processed_content = str(article.content).replace("\n", " .").replace("\r", " .").replace("\t", " ")
+            # CONTENT SANITIZATION
+            processed_content = str(article.content).replace("\\n", " .").replace("\\r", " .").replace("\t", " ")
+            processed_content = processed_content.replace("\n", " .").replace("\r", " .").replace("\t", " ")
             # replace also quotes and double quotes
             processed_content = processed_content.replace("\"", " ").replace("\'", " ")
+            # remove \ and /
+            processed_content = processed_content.replace("\\n", " ").replace("\\r", " ")
+            processed_content = processed_content.replace("\\", " ").replace("/", " ")
+
             new_item = Item(
                 content=Content(str(processed_content)),
                 # author=Author(str(source_domain)),
