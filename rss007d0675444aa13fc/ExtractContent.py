@@ -22,32 +22,37 @@ paramount to correctly assess the expanse of the task before assigning it as scr
 content, and certain tasks may end up taking a lot more time and resources than others.
 
 Note that one spider will be launched for every URL submitted to avoid putting too much charge on a single spider.
-
-Author: Térence Gras, CEO @ Exorde Labs
 """
 from datetime import datetime
 import random
 from ArticleClass import Article
 from RssClass import RSS
-from XmlParser import parse_reference_json_data, extract_latest_items
+from XmlParser import parse_reference_json, extract_latest_items, convert_to_standard_timezone
+from GlobalVariables import JSON_FILE, USER_AGENT_LIST
+
 from newspaper import Article as Newspaper
+from newspaper import Config
 
 
 def extract_content(_dict):  # using Newspaper3k
 
     content = [[] for i in range(len(_dict))]
     for i in range(0, len(_dict)):
-        a = Newspaper(_dict[i][0], language=_dict[i][1])
-        a.download()
         try:
+            rand = random.choice(USER_AGENT_LIST)
+            config = Config()
+            config.browser_user_agent = rand
+            a = Newspaper(_dict[i][0], language=_dict[i][1], config=config)
+            print("Downloading " + str(_dict[i][0]))
+            a.download()
             a.parse()
             content[i].append(a.text)
-        except:
+        except Exception as e:
             content[i].append("")
     return content
 
 
-def request_random_content(_n_articles, _max_age, _json_data, _max_number_of_tries):
+def request_content(_n_articles, _max_age):
     """
     Requests random articles from the database that fit the entry params.
     :param _n_articles: The random number of articles we wish to extract from the RSS feeds.
@@ -55,8 +60,8 @@ def request_random_content(_n_articles, _max_age, _json_data, _max_number_of_tri
     :return: A list of articles composed of [source, language, description, url, content, publish date]
     """
 
-    rss_ids = parse_reference_json_data(_json_data)
-    articles = find_random_articles_with_max_age(_n_articles, rss_ids, _max_age, _max_number_of_tries)
+    rss_ids = parse_reference_json(JSON_FILE)
+    articles = find_random_articles_with_max_age(_n_articles, rss_ids, _max_age)
 
     dict = []
 
@@ -74,7 +79,7 @@ def request_random_content(_n_articles, _max_age, _json_data, _max_number_of_tri
     return articles
 
 
-def find_random_articles_with_max_age(_n_articles, _rss_id_list, _max_age, _max_number_of_tries):
+def find_random_articles_with_max_age(_n_articles, _rss_id_list, _max_age):
     """
     Finds a random number of article urls within the reference JSON feed.
     :param _max_age:
@@ -87,13 +92,8 @@ def find_random_articles_with_max_age(_n_articles, _rss_id_list, _max_age, _max_
     appended_urls = []
     now_time = datetime.now()
     now_time = now_time.strftime("%Y-%m-%d %H:%M:%S")  # format correctly
-    cumulative_tries = 0
-    current_try_count = 0
 
     while len(articles) < _n_articles:
-
-        if current_try_count > _max_number_of_tries:  # stop here
-            return articles
 
         rss_id = random.choice(_rss_id_list)
 
@@ -101,17 +101,12 @@ def find_random_articles_with_max_age(_n_articles, _rss_id_list, _max_age, _max_
         extract_latest_items(rss)
 
         for link in rss.link_array:
-            current_try_count += 1
-            cumulative_tries += 1
-            if cumulative_tries > 5:
-                cumulative_tries = 0
-                break # break out of this for loop and move on to the next one
             if is_within_max_age(now_time, link.publish_date, _max_age) and link.link not in appended_urls:
-                cumulative_tries = 0  # reset this parameter to zero as we have selected an article
                 appended_urls.append(link.link)
                 articles.append(Article(rss_id.source, rss_id.description, rss_id.language, link.title, link.link, link.publish_date, link.description))
                 if len(articles) == _n_articles:
                     break
+
     return articles
 
 
@@ -132,6 +127,31 @@ def is_within_max_age(_now_time, _date, _max_age):
         return True
     else:
         return False
+
+
+if __name__ == '__main__':
+
+    articles = request_content(10, 86400)
+    print("\n\n\n\n\n")
+    print("***********************************************************************************************************")
+    for article in articles:
+        print("Feed: " + article.rss_source)
+        print("Feed Descrition: " + article.rss_description)
+        print("Article Title: " + article.title)
+        print("Article URL: " + article.url)
+        print("Article Language: " + article.language)
+        print("Article Publish Date: " + article.publish_date)
+        print("Article Description: " + article.description)
+        print("Article Content: ")
+        for element in article.content:
+            print(element)
+        print(
+            "***********************************************************************************************************\n")
+
+    # content = extract_content(["https://www.asahi.com/articles/ASR695HL3R69UHBI00N.html?ref=rss"])
+    # for cont in content:
+    #     for element in cont["visible_text"]:
+    #         print(element)
 
 
 
