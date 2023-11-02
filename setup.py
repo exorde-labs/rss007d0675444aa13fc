@@ -9,7 +9,7 @@ setup(
         "aiohttp",
         "tldextract>=3.1.0",
         "feedparser>=6.0.8",
-        "newspaper3k>=0.2.8",
+        "newspaper3k==0.2.8",
         "pytz>=2023.3",
         "python_dateutil>=2.8.2"
     ],
