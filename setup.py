@@ -9,9 +9,10 @@ setup(
         "aiohttp",
         "tldextract>=3.1.0",
         "feedparser>=6.0.8",
-        "newspaper3k>=0.2.8",
+        "newspaper4k>=0.9.3.1",
         "pytz>=2023.3",
-        "python_dateutil>=2.8.2"
+        "python_dateutil>=2.8.2",
+        "lxml_html_clean>=0.1.1"
     ],
     extras_require={"dev": ["pytest", "pytest-cov", "pytest-asyncio"]},
 )

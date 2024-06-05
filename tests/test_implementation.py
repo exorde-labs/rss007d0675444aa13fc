@@ -1,5 +1,5 @@
 from rss007d0675444aa13fc import query
-from exorde_data.models import Item
+from exorde_data import Item
 import pytest
 
 

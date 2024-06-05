@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timezone, timedelta
 from typing import AsyncGenerator
 import logging
@@ -256,10 +257,12 @@ async def request_random_content(_n_articles, _max_age, _json_data, _max_number_
     """
 
     rss_ids = parse_reference_json_data(_json_data)
-    articles = await find_random_articles_with_max_age(_n_articles, rss_ids, _max_age, _max_number_of_tries)
+    articles = await find_random_articles_with_max_age(
+        _n_articles, rss_ids, _max_age, _max_number_of_tries
+    )
 
     dict = []
-
+    print("articles -> {}".format(articles))
     for article in articles:
         dict.append((article.url, article.language[:2]))
 
@@ -289,21 +292,27 @@ async def find_random_articles_with_max_age(_n_articles, _rss_id_list, _max_age,
     now_time = now_time.strftime("%Y-%m-%d %H:%M:%S")  # format correctly
     cumulative_tries = 0
     current_try_count = 0
-
+    print("n_articles is {}".format(_n_articles))
     while len(articles) < _n_articles:
-
+        print("looping")
         if current_try_count > _max_number_of_tries:  # stop here
             return articles
 
         rss_id = random.choice(_rss_id_list)
 
         rss = RSS(rss_id)
-        await extract_latest_items(rss)
+        try:
+            await extract_latest_items(rss)
+        except:
+            print("Could not extract latest items")
+            continue
 
         for link in rss.link_array:
+            print(link.link)
             current_try_count += 1
             cumulative_tries += 1
             if cumulative_tries > 5:
+                print("break bc of cumulative_tries")
                 cumulative_tries = 0
                 break # break out of this for loop and move on to the next one
             if is_within_max_age(now_time, link.publish_date, _max_age) and link.link not in appended_urls:
@@ -312,6 +321,8 @@ async def find_random_articles_with_max_age(_n_articles, _rss_id_list, _max_age,
                 articles.append(Article(rss_id.source, rss_id.description, rss_id.language, link.title, link.link, link.publish_date, link.description))
                 if len(articles) == _n_articles:
                     break
+            else:
+                print("Not within max age, max age is {}".format(_max_age))
     return articles
 
 
@@ -438,6 +449,7 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
         data = await get_json_dict()
     except Exception as e:
         logging.info(f"[RSS newsfeed] Error when fetching the FeedSource.json: {e}")
+    print("has `data`")
     """
     Article data is accessible following this structure:
         self.rss_source // the RSS feed name that we are collecting from
@@ -454,7 +466,8 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
     except Exception as e:
         logging.exception(f"[RSS newsfeed] Error when requesting content: {e}")
         articles = []
-
+    print("Got `articles`")
+    print("len of articles is {}".format(len(articles)))
     for article in articles:
         try:
             logging.info(f"[RSS newsfeed] FOUND ARTICLE: ")    
@@ -485,3 +498,13 @@ async def query(parameters: dict) -> AsyncGenerator[Item, None]:
             yield new_item
         except Exception as e:
             logging.info(f"[RSS newsfeed] Error during article yield: {e}")
+
+
+async def main():
+    print("starting")
+    while True:
+        async for result in query({}):
+            print(result)
+
+if __name__ == '__main__':
+    asyncio.run(main())

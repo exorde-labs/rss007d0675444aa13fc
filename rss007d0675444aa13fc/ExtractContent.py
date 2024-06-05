@@ -152,6 +152,3 @@ if __name__ == '__main__':
     # for cont in content:
     #     for element in cont["visible_text"]:
     #         print(element)
-
-
-
