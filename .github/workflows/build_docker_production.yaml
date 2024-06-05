@@ -1,0 +1,28 @@
+name: Notify External Repository on Update
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+jobs:
+  notify-external-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Repository Dispatch Event
+        env:
+          REPOSITORY_ACCESS: ${{ secrets.REPOSITORY_ACCESS }}
+        run: |
+          # Extract the repository name from the full GITHUB_REPOSITORY environment variable (format "owner/repo")
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          
+          # The target repository where you want to trigger the dispatch event
+          TARGET_OWNER="exorde-labs"
+          TARGET_REPO="spot"
+
+          # Trigger a repository dispatch event in the target repository
+          curl -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token $REPOSITORY_ACCESS" \
+            "https://api.github.com/repos/${TARGET_OWNER}/${TARGET_REPO}/dispatches" \
+            -d "{\"event_type\": \"trigger-build-event\", \"client_payload\": {\"moduleName\": \"${REPO_NAME}\"}}"
